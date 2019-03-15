@@ -1,0 +1,320 @@
+#!/bin/bash
+
+######################################################################
+# megaR4id
+# Converts syntax of LSI Raid Controller 2 easy use with short command
+# Needs MegaRaid/CLi installed
+# command: > megaR4id or megaR4id -mail
+######################################################################
+
+######################################################################
+# last modify: 03.10.2018
+# bug or anything: d43M0n23@3xpl0it.com
+######################################################################
+
+######################################################################
+# synatx help
+# Rebuild:storcli64 /c0 /e252 /sall show rebuild
+# Showall: storcli64 /c0 show all
+######################################################################
+
+######################################################################
+# Bash sTyl3!
+clear='\033[0m'			#alle Attribute zurücksetzen
+bold='\033[1m'			#Fettschrift
+red='\033[31m'			#rot
+green='\033[32m'		#grün
+yell='\033[33m'			#gelb
+blue='\033[34m'			#blau
+mag='\033[35m'			#magenta
+turk='\033[36m'			#türkis
+white='\033[37m'		#weiß
+orange='\033[93m'               #orange
+######################################################################
+
+# -------------------------------------
+# Prompt displays available
+# chose your own 'personalized prompt'.
+# -▷   -▶   '>'  ☭   ✿   ☯   ☠   ☆   ➽  ♛  ⊶
+# -------------------------------------
+PrompT=--▷
+
+
+# -----------------------------------
+# Colorise shell Script output leters
+# -----------------------------------
+
+Colors() {
+Escape="\033";
+  white="${Escape}[0m";
+  RedF="${Escape}[31m";
+  GreenF="${Escape}[32m";
+  YellowF="${Escape}[33m";
+  BlueF="${Escape}[34m";
+  CyanF="${Escape}[36m";
+  orange="${Escape}[93m";
+Reset="${Escape}[0m";
+}
+
+
+##Base-Variablen
+DATE=$(date +%F)
+version=v1.0
+vdate=16.10.2018
+
+# Controller ID default
+controller=0
+
+# Local Destination
+INSTALL_DIR=/usr/share/megaR4id
+
+
+# megacli directory default
+megacli_dir=/opt/MegaRAID/MegalCli
+
+# storecli directory default
+storecli_dir=/opt/MegaRAID/storecli
+
+#########################################################################
+#########################################################################
+# INSTALL
+if [ ! -d $INSTALL_DIR ]; then
+echo -e "\n${green} + -- --=[This is your first run of the megaR4id script${clear}"
+echo -e "${green} + -- --=[This script will install megaR4id under $INSTALL_DIR.${clear}"
+echo -e "${green} + -- --=[After install you can use the command 'megaR4id' Server/System wide and remove the downloaded git folder${clear}"
+
+sleep 2
+mkdir -p $INSTALL_DIR 2> /dev/null
+cp -Rf $PWD/* $INSTALL_DIR 2> /dev/null
+rm -f /usr/bin/megaR4id
+ln -s $INSTALL_DIR/megaR4id /usr/bin/megaR4id
+echo -e "${green} + -- --=[Installation Finish.${clear}"
+sleep 2
+fi
+
+#---------------
+# MAIN FUNCTIONS
+# --------------
+
+# Latest release
+LATEST_RELEASE=$(curl -L -s -H 'Accept: application/json' https://github.com/d43M0n23/megaR4id/releases/latest)
+LATEST_VERSION=$(echo $LATEST_RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+
+# UPDATE NEW VERSION
+if [ "$LATEST_VERSION" != "$version" ]; then
+echo -e "\n${red}Your Version of megaR4id is outdated!${clear}"
+echo -e "\n${green}Please use the update function: megaR4id --update!${clear}"
+sleep 5
+fi
+
+# UPDATE
+if [ "$1"  = "--update" ]; then
+echo -e "\n${turk}You have select the update Feature${clear}"
+sleep 2
+cd /tmp/
+git clone https://github.com/d43M0n23/megaR4id.git
+cp -Rf megaR4id/* $INSTALL_DIR 2> /dev/null
+rm -f /usr/bin/megaR4id
+ln -s $INSTALL_DIR/megaR4id /usr/bin/megaR4id
+echo -e "\n${green}Update finish.Please restart megaR4id.${clear}"
+rm -r megaR4id
+exit
+fi
+
+# UNINSTALL
+if [ "$1"  = "--deinstall" ]; then
+echo -e "\n${turk}You have select the deinstall Feature${clear}"
+sleep 2
+rm -f /usr/bin/megaR4id
+cd /usr/share/
+rm -r megaR4id/
+echo -e "\n${turk}deinstall Finish${clear}"
+cd
+exit
+fi
+############################################################################
+############################################################################
+
+# CLI CHECK []
+# prüfen was installiert ist oder wenn nichts davon bla bla...
+#if [ -d ${megacli_dir}/ ]; then
+#	$corecmd="/opt/MegaRAID/MegaCli/./MegaCli64";
+#elif [ -d ${storecli_dir}/ ]; then
+#	$corecmd="/opt/MegaRAID/storcli/./storcli64";
+#
+#else
+#read -p "Install Store-Manager (y/n)? " installcli
+#	if [ $installcli = y ];then
+#	gunzip package/storcli_All_OS.zip
+#	dpkg-i package/storecli_All_OS/Ubuntu/storcli_1.23.02_all.deb
+#	else
+#	echo -e "restart the script"
+#	fi
+#fi
+
+
+corecmd="/opt/MegaRAID/storcli/./storcli64";
+
+# ---------------
+# MAIL FUNKTION
+# ---------------
+
+if [ "$1"  = "--mail" ]; then
+hostname=$(hostname)
+if [ ${hostname} = "xenserver-hexa1" ]; then xenstore="/var/run/sr-mount/9bdf51f4-374c-5270-e72f-7e4578869783"; fi
+if [ ${hostname} = "xenserver-hexa2" ]; then xenstore="/var/run/sr-mount/2d8f3db1-5e6d-7d84-b57b-eac319941702"; fi
+if [ ${hostname} = "xenserver-hexa3" ]; then xenstore="/var/run/sr-mount/df292134-b0a1-66cf-ee3b-cb89efbdcf1b"; fi
+if [ ${hostname} = "xenserver-hexa4" ]; then xenstore="/var/run/sr-mount/3689ea85-7544-f8ca-3596-6e82922f6df6"; fi
+$corecmd /c0 /eall /sall show > ${hostname}_raid.txt;
+cp ${hostname}_raid.txt ${xenstore}/${hostname}_raid.txt;
+#mail -s "${hostname} - Raidstatus" alex@xcoorp.com < ${hostname}_raid.txt -aFrom:Raid@xcoorp.com
+exit
+fi
+
+
+
+# ---------------
+# SCRIPT FUNCTION
+# ---------------
+
+
+sh_stage1 () {
+echo -e "Controller Status und Config\n"
+$corecmd /c0 show
+sleep 10
+}
+
+sh_stage2 () {
+echo -e "Controller Status und Config (FULL)\n"
+$corecmd /c0 show all
+sleep 10
+}
+
+sh_stage3 () {
+echo -e "Ausgabe der Festplatteninformationen\n"
+$corecmd /c0 /eall /sall show
+sleep 10
+}
+
+sh_stage4 () {
+echo -e "Ausgabe der Festplatteninformationen (FULL)\n"
+$corecmd /c0 /eall /sall show all
+sleep 10
+}
+
+
+sh_stage5 () {
+echo -e "Aktivieren von Zusatzfeatures\n"
+read -p "Enter a key-string: " key
+$corecmd /c0 set aso key=$key
+sleep 10
+}
+
+sh_stage6 () {
+echo -e "Ausgabe der VirtualDrives\n"
+$corecmd /c0 /vall show
+sleep 10
+}
+
+sh_stage7 () {
+echo -e "Ausgabe der VirtualDrives (FULL)\n"
+$corecmd /c0 /vall show all
+sleep 10
+}
+
+sh_stage8 () {
+echo -e "Status aller laufender Rebuilds\n"
+$corecmd /c0 /eall /sall show rebuild
+sleep 10
+}
+
+
+# -------------------------
+# FUNTION TO EXIT FRAMEWORK
+# -------------------------
+sh_exit () {
+echo -e "${BlueF}[*]${white} Exit megaR4id framework...${Reset}";
+sleep 1
+exit
+}
+
+
+# ---------------
+# START MAINSTAGE
+# ---------------
+
+sh_main () {
+echo "nothing" > /dev/null 2>&1
+}
+
+Colors;
+# -----------------------------
+# MAIN MENU SHELLCODE GENERATOR
+# -----------------------------
+# Loop forever
+while :
+do
+clear
+echo -e '\n'
+echo -e '              ____             __  __ __      '
+echo -e '   ____ ___  / __ \____  _____/ /_/ // / _____'
+echo -e '  / __ `__ \/ / / / __ \/ ___/ __/ // /_/ ___/'
+echo -e ' / / / / / / /_/ / / / (__  ) /_/__  __/ /    '
+echo -e '/_/ /_/ /_/\____/_/ /_/____/\__/  /_/ /_/     '
+
+echo -e "\n${orange} + -- --=[https://3xpl0it.com${clear} ${red}Version ${version}${clear}"
+
+sleep 1
+
+echo -e "\n"
+cat <<EOF
+megaR4id
+EOF
+echo -e "Latest Release: ${LATEST_VERSION}"
+echo -e "\n"
+cat << !
+    _____________________________________________________________________
+    | OPTION |                  DESCRIPTION(filters)                    |
+    ---------------------------------------------------------------------
+    |   1    -  Controller Status und Config                            |
+    |   2    -  Controller Status und Config (FULL)                     |
+    |   3    -  Ausgabe der Festplatteninformationen                    |
+    |   4    -  Ausgabe der Festplatteninformationen (FULL)             |
+    |   5    -  Aktivieren von Zusatzfeatures (CacheCade,Fastpath,..)   |
+    |   6    -  Ausgabe der VirtualDrives                               |
+    |   7    -  Ausgabe der VirtualDrives (FULL)                        |
+    |   8    -  Status aller laufender Rebuilds                         |
+    |                                                                   |
+    |   H    -  megaR4id github help                                    |
+    |   E    -  Exit/close megaR4id                                     |
+    ---------------------------------------------------------------------
+!
+sleep 1
+#echo -e ${white} Chose Your Option${RedF}: ${Reset};
+#echo -n "$PrompT"
+#read choice
+read -p " Chose Your Option: " choice
+case $choice in
+1) sh_stage1 ;;
+2) sh_stage2 ;;
+3) sh_stage3 ;;
+4) sh_stage4 ;;
+5) sh_stage5 ;;
+6) sh_stage6 ;;
+7) sh_stage7 ;;
+8) sh_stage8 ;;
+9) sh_stage9 ;;
+10) sh_stage10 ;;
+11) sh_stage11 ;;
+12) sh_stage12 ;;
+13) sh_stage13 ;;
+14) sh_stage14 ;;
+15) sh_stage15 ;;
+16) sh_stage16 ;;
+h) sh_help ;;
+H) sh_help ;;
+e) sh_exit ;;
+E) sh_exit ;;
+*) echo "\"$choice\": is not a valid Option"; sleep 1 ;;
+esac
+done
