@@ -140,8 +140,16 @@ fi
 # ---------------
 
 
+## Aircrack
 sh_stage1 () {
-echo -e "Controller Status und Config\n"
+# Variablen
+wordlist=word.lst
+output=airhack.txt
+
+echo -e "Aircrack attack"
+airmon-ng
+airmon-ng start wlan0
+
 #read -p "Enter a key-string: " key
 #$corecmd /c0 set aso key=$key
 sleep 10
